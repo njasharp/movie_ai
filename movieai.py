@@ -4,7 +4,7 @@ import streamlit as st
 from groq import Groq
 # Requests and pandas imports are kept but unused in the current core logic.
 
-st.set_page_config(page_title="AI Movie Script Generator", page_icon="🎬", layout="wide")
+st.set_page_config(page_title="AI 2 Movie Script Generator", page_icon="🎬", layout="wide")
 
 # Initialize session state for script generation
 if 'generated_script' not in st.session_state:
@@ -100,11 +100,11 @@ def main():
     </style>
     """, unsafe_allow_html=True)
 
-    st.title("🎬 AI Movie Scene Generator")
+    st.title("🎬 AI 2 Movie Scene Generator")
     st.markdown("AI-powered tool to generate detailed scene content based on genre, format, and video style.")
 
     # Sidebar Configuration
-    st.sidebar.image("1.png", caption="Lights, Camera, Action!", use_column_width=True)
+    st.sidebar.image("2.png", caption="Lights, Camera, Action!", use_container_width=True)
     st.sidebar.header("⚙️ Settings")
     
     # Groq API Key check 
