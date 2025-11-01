@@ -1,2 +1,3 @@
 # movie_ai
-<img width="1115" height="559" alt="image" src="https://github.com/user-attachments/assets/e5f1fcd0-5e7b-409c-82cb-b29cb6123dfc" />
+
+<img width="1123" height="578" alt="image" src="https://github.com/user-attachments/assets/a9b2f80d-04d9-4700-a384-8e23ff0d9a43" />
