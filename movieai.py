@@ -2,11 +2,10 @@ import os
 import json
 import streamlit as st
 from groq import Groq
-# Requests and pandas imports are kept but unused in the current core logic.
 
 st.set_page_config(page_title="AI 2 Movie Script Generator", page_icon="🎬", layout="wide")
 
-# Initialize session state for script generation
+# Initialize session state for generated text
 if 'generated_script' not in st.session_state:
     st.session_state.generated_script = ""
 
@@ -25,7 +24,6 @@ def generate_creative_content(movie_type, output_format, video_length_style, gro
     Uses the Groq model to generate creative content based on movie type, output format,
     video length/style, and incorporating various shot types.
     """
-    
     shot_instructions = "Please incorporate a variety of camera shots and angles from this list into your scene descriptions and stage directions: " + ", ".join(MOVIE_SHOT_TYPES) + "."
     
     # Adjust prompt based on output format
@@ -72,7 +70,6 @@ def generate_creative_content(movie_type, output_format, video_length_style, gro
             )
         return response.choices[0].message.content.strip()
     except Exception as e:
-        # Improved error display for API issues
         error_message = str(e)
         if "organization_restricted" in error_message:
             st.error("🚨 API Access Restricted: Your Groq organization has been restricted. Please contact Groq support.")
@@ -82,39 +79,36 @@ def generate_creative_content(movie_type, output_format, video_length_style, gro
             st.error(f"Error generating content: {e}")
         return "Failed to generate content due to an external API error."
 
+
 # --- Main App ---
 def main():
     st.markdown("""
     <style>
         .block-container { padding-left: 2rem; padding-right: 2rem; }
         .stAlert { margin-top: 1rem; }
-        /* Style for the generated script display to look like a script page */
         pre {
             background-color: #1e1e1e;
             color: #d4d4d4;
             padding: 15px;
             border-radius: 5px;
             overflow-x: auto;
-            white-space: pre-wrap; /* Ensures long lines wrap */
+            white-space: pre-wrap;
         }
     </style>
     """, unsafe_allow_html=True)
 
     st.title("🎬 AI 2 Movie Scene Generator")
-    st.markdown("AI-powered tool to generate detailed scene content based on genre, format, and video style.")
+    st.markdown("AI-powered creative tool to generate scripts, image prompts, and export cinematic content.")
 
-    # Sidebar Configuration
-    st.sidebar.image("2.png", caption="Lights, Camera, Action!", use_container_width=True)
+    # Sidebar setup
+    st.sidebar.image("2.png", caption="Lights, Camera, Action!")
     st.sidebar.header("⚙️ Settings")
-    
-    # Groq API Key check 
+
+    # Groq API Key setup
     groq_api_key = os.environ.get("GROQ_API_KEY") or st.secrets.get("GROQ_API_KEY")
-    
     groq_client_instance = None
     if not groq_api_key:
-        st.error("⚠️ Groq API key not found. Please set `GROQ_API_KEY` as an environment variable or in Streamlit secrets (`.streamlit/secrets.toml`).")
-        # Do not st.stop() here, allow the UI to load so the user can see the error.
-        groq_client_instance = None
+        st.error("⚠️ Groq API key not found. Please set `GROQ_API_KEY` as an environment variable or in Streamlit secrets.")
     else:
         try:
             groq_client_instance = Groq(api_key=groq_api_key)
@@ -125,67 +119,123 @@ def main():
     model_name = st.sidebar.selectbox(
         "AI Model:",
         ["llama-3.3-70b-versatile","openai/gpt-oss-120b","mixtral-8x7b-32768", "llama-3.1-70b-versatile", "gemma-7b-it"],
-        help="Choose the AI model for generation. Larger models generally offer better quality."
+        help="Choose the AI model for generation."
     )
-    
+
     st.sidebar.markdown("---")
-    st.sidebar.markdown("**🤖 AI Features:**")
-    st.sidebar.markdown("✓ Generate diverse scene content (Storyboard, Dialog, Shooting Script)")
-    st.sidebar.markdown("✓ Customize for different video lengths/styles (TikTok, YouTube, Film)")
-    st.sidebar.markdown("✓ Tailored to your chosen movie type and cinematic shot types")
-    st.sidebar.caption("Built with 💡 Streamlit + Groq | DW 2025")
-    
-    st.sidebar.markdown("---")
-    st.sidebar.header("🎬 Shot List Reference")
-    st.sidebar.markdown("The AI will incorporate a variety of these shot types:")
+    st.sidebar.markdown("**🎬 Shot List Reference**")
     for shot in MOVIE_SHOT_TYPES:
         st.sidebar.write(f"- {shot}")
 
-    # Main Interface for Script Generation
-    st.header("Define Your Scene Parameters")
-        
-    # User input for movie type
-    movie_type_input = st.text_input(
-        "What kind of movie scene would you like?",
-        placeholder="e.g., Sci-Fi Thriller, Romantic Comedy, Fantasy Adventure, Horror",
-        key="movie_type_input"
+    st.sidebar.caption("Built with 💡 Streamlit + Groq | DW 2025")
+
+    # --- Mode Selector ---
+    mode = st.radio(
+        "Select Mode:",
+        ["🎬 Script Generation", "🖼️ Image Prompt Generator", "💾 Export Tools"],
+        horizontal=True
     )
 
-    # New options for output format and video length/style
-    col1, col2 = st.columns(2)
-    with col1:
-        output_format_input = st.selectbox(
-            "Select Output Format:",
-            ["Shooting Script", "Dialog Script", "Storyboard Text"], # Reordered to put most detailed first
-            help="Choose how the content is formatted: visual descriptions, dialogue, or detailed script."
-        )
-    with col2:
-        video_length_style_input = st.selectbox(
-            "Select Video Length/Style:",
-            ["Film Scene (Longer Scene - 3+ min)", "YouTube (Medium Video - 1-3 min)", "TikTok (Short Video - ~30s)"],
-            help="Specify the intended length and style of the video for the scene."
+    # --- Script Generation Mode ---
+    if mode == "🎬 Script Generation":
+        st.header("Define Your Scene Parameters")
+        
+        movie_type_input = st.text_input(
+            "What kind of movie scene would you like?",
+            placeholder="e.g., Sci-Fi Thriller, Romantic Comedy, Fantasy Adventure, Horror",
+            key="movie_type_input"
         )
 
-    # Generate Script button
-    if st.button("Generate Scene Content", type="primary", key="generate_script_button"):
-        if not groq_client_instance:
-             st.error("Cannot run generation. Please resolve the API Key issue displayed above.")
-        elif movie_type_input:
-            st.session_state.generated_script = generate_creative_content(
-                movie_type_input,
-                output_format_input,
-                video_length_style_input,
-                groq_client_instance,
-                model_name
+        col1, col2 = st.columns(2)
+        with col1:
+            output_format_input = st.selectbox(
+                "Select Output Format:",
+                ["Shooting Script", "Dialog Script", "Storyboard Text"]
+            )
+        with col2:
+            video_length_style_input = st.selectbox(
+                "Select Video Length/Style:",
+                ["Film Scene (Longer Scene - 3+ min)", "YouTube (Medium Video - 1-3 min)", "TikTok (Short Video - ~30s)"]
+            )
+
+        if st.button("Generate Scene Content", type="primary"):
+            if not groq_client_instance:
+                st.error("Cannot run generation. Please resolve the API Key issue.")
+            elif movie_type_input:
+                st.session_state.generated_script = generate_creative_content(
+                    movie_type_input,
+                    output_format_input,
+                    video_length_style_input,
+                    groq_client_instance,
+                    model_name
+                )
+            else:
+                st.warning("Please enter a movie type to generate content.")
+
+        if st.session_state.generated_script:
+            st.subheader(f"Generated Content: ({output_format_input})")
+            st.code(st.session_state.generated_script, language='text')
+            st.download_button(
+                "💾 Download as .txt",
+                st.session_state.generated_script,
+                file_name="movie_scene.txt",
+                mime="text/plain"
+            )
+
+    # --- Image Prompt Generator Mode ---
+    elif mode == "🖼️ Image Prompt Generator":
+        st.header("🎨 AI Image Prompt Creator")
+        st.markdown("Generate cinematic visual prompts for concept art, storyboards, or key art.")
+
+        subject = st.text_input("Describe the scene or subject:", placeholder="e.g., a cyberpunk city at night, rain reflections on neon-lit streets")
+        style = st.selectbox("Select Art Style:", ["Cinematic Realism", "Concept Art", "Anime", "Pixel Art", "Illustration", "Photorealistic"])
+        mood = st.selectbox("Select Mood/Tone:", ["Epic", "Dark", "Dreamy", "Hopeful", "Tense", "Romantic", "Melancholic"])
+
+        if st.button("Generate Image Prompt", type="primary"):
+            if not groq_client_instance:
+                st.error("Cannot run generation. Please resolve the API Key issue displayed above.")
+            elif subject:
+                prompt = f"Create a detailed image prompt for an AI art generator. Scene: {subject}. Art style: {style}. Mood: {mood}. Include cinematic camera angles, lighting, and composition."
+                with st.spinner("Generating image prompt..."):
+                    try:
+                        response = groq_client_instance.chat.completions.create(
+                            model=model_name,
+                            messages=[{"role": "user", "content": prompt}],
+                            temperature=0.85,
+                            max_tokens=1000,
+                        )
+                        st.session_state.generated_script = response.choices[0].message.content.strip()
+                        st.success("✅ Image prompt ready!")
+                    except Exception as e:
+                        st.error(f"Error generating image prompt: {e}")
+            else:
+                st.warning("Please describe your scene first.")
+
+        if st.session_state.generated_script:
+            st.subheader("Generated Image Prompt")
+            st.code(st.session_state.generated_script, language='text')
+            st.download_button(
+                "💾 Download Prompt as .txt",
+                st.session_state.generated_script,
+                file_name="image_prompt.txt",
+                mime="text/plain"
+            )
+
+    # --- Export Tools Mode ---
+    elif mode == "💾 Export Tools":
+        st.header("📁 Export Your Work")
+        st.markdown("Download any generated text as a `.txt` file for easy sharing or editing.")
+
+        if st.session_state.generated_script:
+            st.download_button(
+                "📥 Download Last Output",
+                st.session_state.generated_script,
+                file_name="generated_output.txt",
+                mime="text/plain"
             )
         else:
-            st.warning("Please enter a movie type to generate content.")
+            st.info("No generated content found yet. Try generating a script or image prompt first.")
 
-    # Display the generated script
-    if st.session_state.generated_script:
-        st.subheader(f"Generated Content: ({output_format_input})")
-        # Use simple markdown for display, rely on the custom CSS for styling the <pre> block
-        st.code(st.session_state.generated_script, language='text')
 
 if __name__ == "__main__":
     main()
